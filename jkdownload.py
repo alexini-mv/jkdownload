@@ -1,18 +1,25 @@
 import os
 import sys
 import time
+import re
+import glob
+from pathlib import Path
 
 from tqdm import trange
 
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service as ChromeService
+
+
+#from webdriver_manager.chrome import ChromeDriverManager
+#from selenium.webdriver.chromium.service import ChromiumService
 
 
 def setup_driver():
     # Instanciamos el servicio con el driver para Chrome
-    service = ChromeService(ChromeDriverManager().install())
+    #service = ChromeService(ChromeDriverManager().install())
+    service = ChromeService(executable_path="./chromedriver")
 
     # Agregamos algunas opciones que llevará el driver
     options = webdriver.ChromeOptions()
@@ -27,6 +34,23 @@ def request_and_download(driver, url):
     # Hacemos la petición a la URL
     driver.get(url)
 
+    # Obteniendo el nombre del anime
+    # strings = url.removeprefix("https://jkanime.net/").split("/")
+    # name_anime = strings[0]
+    name_anime = driver.find_element(
+        by=By.XPATH,
+        value='//div[@class="anime__details__title"]/h3').text
+    
+    # Obtenemos el nombre del anime
+    year_anime = driver.find_element(
+        by=By.XPATH,
+        value='//div[@class="anime__details__widget"]//ul/li[7]').text
+    year_anime = re.findall("\d{4}", year_anime)[0]
+
+    name_dir = f"./Anime/{name_anime} ({year_anime})"
+
+    Path(name_dir).mkdir(parents=True, exist_ok=True)
+
     # Obtenemos el número de capítulos
     number_episodes = driver.find_element(
         by=By.XPATH,
@@ -34,12 +58,19 @@ def request_and_download(driver, url):
     number_episodes = int(number_episodes.split(":")[-1])
 
     # Llamamos la función para descargar cada capítulo
-    for i in trange(1, number_episodes + 1):
-        url_episode = f"{url}{i}"
-        download_a_video(driver=driver, url=url_episode)
+    print(f"Descargando el anime {name_anime}:")
+
+    for index in trange(1, number_episodes + 1):
+        url_episode = f"{url}{index}"
+
+        download_a_video(driver=driver,
+                         url=url_episode,
+                         name_anime=name_anime,
+                         name_dir=name_dir,
+                         index=index)
 
 
-def download_a_video(driver, url):
+def download_a_video(driver, url, name_anime, name_dir, index):
     # Hacemos la consulta a la página del capítulo
     driver.get(url)
 
@@ -53,17 +84,22 @@ def download_a_video(driver, url):
         by=By.XPATH, value='//a[@id="jkdown"]')
     download_video_boton.click()
 
-    # Esperando a que se descargue el archivo
-    strings = url.removeprefix("https://jkanime.net/").split("/")
-    name_file = f"{strings[0]}-{strings[1].zfill(2)}.mp4"
-
-    print(f"Descargando archivo {name_file}, esperando máximo 60 segundos...")
-
     # Realizamos una espera hasta que terminé de descargar el archivo completo
     timeout = 30    # segundos
 
     for t in range(timeout):
-        exists_file = os.path.exists(name_file) or os.path.exists(name_file.replace("-",""))
+
+        file_episode = glob.glob(f"./*-{index.zfill(2)}.mp4")
+        if not file_episode:
+            time.sleep(1)
+        else:
+            # Rename
+            break
+
+
+
+        exists_file = os.path.exists(name_file) or os.path.exists(
+            name_file.replace("-", ""))
 
         if not exists_file:
             time.sleep(1)
@@ -74,6 +110,14 @@ def download_a_video(driver, url):
     if not exists_file:
         print(
             "ALERTA: Sobrepasó el límite de tiempo de espera para descargar el archivo.\n")
+
+
+def exist_file():
+    pass
+
+
+def rename_and_move():
+    pass
 
 
 def run():
