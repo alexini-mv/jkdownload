@@ -1,24 +1,23 @@
+#!/usr/bin/python
+import glob
 import os
+import re
 import sys
 import time
-import re
-import glob
-from pathlib import Path
 
+from pathlib import Path
 from tqdm.auto import trange
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
-
-
 #from webdriver_manager.chrome import ChromeDriverManager
 #from selenium.webdriver.chromium.service import ChromiumService
 
 
 def setup_driver():
     # Instanciamos el servicio con el driver para Chrome
-    #service = ChromeService(ChromeDriverManager().install())
+    # service = ChromeService(ChromeDriverManager().install())
     service = ChromeService(executable_path="/usr/bin/chromedriver")
 
     # Agregamos algunas opciones que llevará el driver

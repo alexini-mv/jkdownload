@@ -1,2 +1,3 @@
-selenium
-tqdm
+tqdm>=4.64
+selenium>=4.4
+

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jkdownload"
+version = "0.0.1"
+authors = [
+  { name = "Alejandro Martínez-Valencia", email = "vaf.ss4@gmail.com" },
+]
+description = "Python implementation of an anime downloader for the jkanime.net website."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+classifiers = [
+  "Programming Language :: Python :: 3.9",
+  "License :: OSI Approved :: GNU General Public License",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "selenium>=4.4",
+  "tqdm>=4.46"
+]
+
+[console_scripts]
+jkdownload = "jkdownload:run"
+
+[project.urls]
+"Homepage" = "https://github.com/alexini-mv/jkdownload"
+"Bug Tracker" = "https://github.com/alexini-mv/jkdownload"
