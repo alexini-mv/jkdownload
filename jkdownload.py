@@ -5,7 +5,7 @@ import re
 import glob
 from pathlib import Path
 
-from tqdm import trange
+from tqdm.auto import trange
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -19,7 +19,7 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 def setup_driver():
     # Instanciamos el servicio con el driver para Chrome
     #service = ChromeService(ChromeDriverManager().install())
-    service = ChromeService(executable_path="./chromedriver")
+    service = ChromeService(executable_path="/usr/bin/chromedriver")
 
     # Agregamos algunas opciones que llevará el driver
     options = webdriver.ChromeOptions()
@@ -35,20 +35,17 @@ def request_and_download(driver, url):
     driver.get(url)
 
     # Obteniendo el nombre del anime
-    # strings = url.removeprefix("https://jkanime.net/").split("/")
-    # name_anime = strings[0]
     name_anime = driver.find_element(
         by=By.XPATH,
         value='//div[@class="anime__details__title"]/h3').text
-    
+
     # Obtenemos el nombre del anime
     year_anime = driver.find_element(
         by=By.XPATH,
         value='//div[@class="anime__details__widget"]//ul/li[7]').text
     year_anime = re.findall("\d{4}", year_anime)[0]
 
-    name_dir = f"./Anime/{name_anime} ({year_anime})"
-
+    name_dir = f"./Anime/{name_anime} ({year_anime})/Season 01"
     Path(name_dir).mkdir(parents=True, exist_ok=True)
 
     # Obtenemos el número de capítulos
@@ -60,7 +57,9 @@ def request_and_download(driver, url):
     # Llamamos la función para descargar cada capítulo
     print(f"Descargando el anime {name_anime}:")
 
-    for index in trange(1, number_episodes + 1):
+    for index in trange(1, number_episodes + 1,
+                        desc="Capítulo", leave=None, colour="green", initial=1,
+                        bar_format="{desc}: {n_fmt} de {total_fmt} |{bar}|[{elapsed}<{remaining}]"):
         url_episode = f"{url}{index}"
 
         download_a_video(driver=driver,
@@ -85,52 +84,33 @@ def download_a_video(driver, url, name_anime, name_dir, index):
     download_video_boton.click()
 
     # Realizamos una espera hasta que terminé de descargar el archivo completo
-    timeout = 30    # segundos
+    timeout = 120    # segundos
 
-    for t in range(timeout):
+    for t in trange(timeout, desc="Timeout", ascii=True, colour="green", leave=None):
+        # Verificamos si existe ya el archivo mp4 del capítulo
+        episode_mp4 = f"{str(index).zfill(2)}.mp4"
+        file_episode = glob.glob(f"./*-{episode_mp4}")
 
-        file_episode = glob.glob(f"./*-{index.zfill(2)}.mp4")
         if not file_episode:
             time.sleep(1)
         else:
-            # Rename
+            # Renombramos el capítulo descargado y lo movemos a su carpeta
+            os.rename(file_episode[0], f"{name_dir}/E{episode_mp4}")
             break
 
-
-
-        exists_file = os.path.exists(name_file) or os.path.exists(
-            name_file.replace("-", ""))
-
-        if not exists_file:
-            time.sleep(1)
-        else:
-            print(f"Archivo {name_file} descargado. :D\n")
-            break
-
-    if not exists_file:
+    if not file_episode:
         print(
-            "ALERTA: Sobrepasó el límite de tiempo de espera para descargar el archivo.\n")
-
-
-def exist_file():
-    pass
-
-
-def rename_and_move():
-    pass
+            f"\nERROR: Se sobrepasó el Timeout de espera para descargar el {name_anime} CAPÍTULO: {index}.")
 
 
 def run():
     driver = setup_driver()
-
     URLs = sys.argv[1:]
 
     for url in URLs:
         request_and_download(driver, url)
 
-    # Cerramos el driver, para finalizar el script
     driver.close()
-    print("Se cerró el driver")
 
 
 if __name__ == "__main__":
